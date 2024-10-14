@@ -1,0 +1,30 @@
+		#Script by u/Superfrog on image.sc forum
+        import imageio
+		import numpy as np
+		import pandas as pd
+		
+		# Load your mapping from 'id' to 'sphinx_id' from the CSV file
+		mapping_df = pd.read_csv('/path/to/acronym_path_svg_hex_query.csv') # "acronym_path_svg_hex_query.csv" is the name of the file to use for the conversion
+		
+		# Create a dictionary for faster lookup
+		id_to_sphinx_mapping = pd.Series(mapping_df.sphinx_id.values, index=mapping_df.id).to_dict()
+		
+		def convert_image_to_16bit_with_mapping(image_path, output_path):
+		    # Load the entire image stack as a numpy array
+		    img_stack = imageio.volread(image_path, format='tiff')
+		
+		    # Initialize an empty array for the converted 16-bit image stack
+		    converted_stack = np.zeros_like(img_stack, dtype=np.uint16)
+		
+		    # Apply the mapping to each pixel in each slice
+		    for i, slice_32bit in enumerate(img_stack):
+		        converted_slice = np.vectorize(id_to_sphinx_mapping.get)(slice_32bit, 0)  # Using 0 as default for unmapped values
+		        converted_stack[i] = converted_slice
+		
+		    # Save the converted image stack as a new 16-bit TIFF file
+		    imageio.volsave(output_path, converted_stack, format='tiff')
+		
+		# Example usage with your provided file paths
+		image_path = '/Users/superfrog/Downloads/allen_mouse_25um_v1.2/annotation.tiff'
+		output_path = '/Users/superfrog/Desktop/new16bit.tiff'
+		convert_image_to_16bit_with_mapping(image_path, output_path)
